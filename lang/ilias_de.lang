@@ -1,0 +1,13 @@
+<!-- language file start -->
+affected_roles_label#:#Eingeschränkte Rollen
+affected_roles_byline#:#Mitglieder der ausgewählten Rollen werden auf bereits bestehende Logins überprüft.
+already_logged_in#:#Mit diesem Konto ist bereits eine Nutzer:in auf der Plattform angemeldet. Bitte melden Sie sich bei der Prüfungsaufsicht.
+anchor_object_types_label#:#Objekt-Typen
+anchor_object_types_byline#:#Ausgewählte Objekt-Typen zeigen einen Reiter zur Verwaltung der Logins von Teilnehmden.
+authorize_relogin#:#Erneutes Login erlauben
+currently_logged_in#:#Aktuell eingeloggt
+ip#:#IP des letzten Logins
+manage_sessions#:#Zugriffe der Teilnehmenden verwalten
+relogin_authorized_until#:#Erneutes Login freigegeben bis
+relogin_validity_label#:#Dauer
+relogin_validity_byline#:#Dauer der Authorisierung zum erneuten Login in Minuten

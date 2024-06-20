@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://www.w3.org" id="usm">
+	<events>
+		<event type="listen" id="Services/Authentication" />
+	</events>
+</plugin>
+
