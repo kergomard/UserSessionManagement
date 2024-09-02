@@ -88,6 +88,19 @@ class SessionsDataRetrieval implements DataRetrieval
     ): ?int {
         return count($this->getCourseMemberIds());
     }
+    
+    /**
+     * @return array<int>
+     */
+    public function getAccessibleAndFilteredMemberIds(): array
+    {
+        return array_map(
+            fn(array $v): int => $v['usr_id'], 
+            $this->filterCourseMembers(
+                \ilObjUser::_getUsersForIds($this->getCourseMemberIds())
+            )
+        );
+    }
 
     private function filterCourseMembers(array $course_members):  array {
         $filter_values = array_filter(

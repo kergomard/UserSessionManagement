@@ -187,6 +187,14 @@ class ManagementGUI
             $this->tpl->setOnScreenMessage('info', $this->lng->txt('no_user_selected'));
             return;
         }
+        
+        if ($affected_users[0] === 'ALL_OBJECTS') {
+            $this->buildFilter();
+            $affected_users = $this->sessions_table_data_retriever
+                ->withObject($this->object)
+                ->withFilterData($this->filter_data)
+                ->getAccessibleAndFilteredMemberIds();
+        }
 
         if ($action === self::ACTION_STRING) {
             $this->user_session_repo->reauthorizeLoginForUsers(
