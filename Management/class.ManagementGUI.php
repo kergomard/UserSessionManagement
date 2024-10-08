@@ -251,7 +251,7 @@ class ManagementGUI
             true,
             true
         );
-        $this->filter_data = $this->ui_service->filter()->getData($filter);
+        $this->filter_data = $this->ui_service->filter()->getData($filter) ?? [];
         return $filter;
     }
 
