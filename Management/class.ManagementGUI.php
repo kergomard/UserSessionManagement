@@ -187,7 +187,7 @@ class ManagementGUI
             $this->tpl->setOnScreenMessage('info', $this->lng->txt('no_user_selected'));
             return;
         }
-        
+
         if ($affected_users[0] === 'ALL_OBJECTS') {
             $this->buildFilter();
             $affected_users = $this->sessions_table_data_retriever
@@ -456,7 +456,7 @@ class ManagementGUI
             && !$this->object->getMemberObject()->isAssigned()) {
             $id = 'join';
             $langvar = 'join';
-            if (ilCourseWaitingList::_isOnList($this->user->getId(), $this->object->getId())) {
+            if (\ilCourseWaitingList::_isOnList($this->user->getId(), $this->object->getId())) {
                 $id = 'leave';
                 $langvar = 'membership_leave';
             }
