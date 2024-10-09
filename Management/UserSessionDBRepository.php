@@ -75,7 +75,11 @@ class UserSessionDBRepository implements UserSessionRepository
             ManagementGUI::ROW_ID => $user['usr_id'],
             ManagementGUI::COLUMN_FIRST_NAME => $user['firstname'],
             ManagementGUI::COLUMN_LAST_NAME => $user['lastname'],
+            ManagementGUI::COLUMN_USERNAME => $user['login'],
             ManagementGUI::COLUMN_EMAIL => $user['email'],
+            ManagementGUI::COLUMN_LAST_LOG_IN => (new \DateTimeImmutable(
+                $user['last_login']
+            ))->setTimezone(new \DateTimeZone($this->user->getTimeZone())),
             ManagementGUI::COLUMN_LOGGED_IN => false
         ];
 

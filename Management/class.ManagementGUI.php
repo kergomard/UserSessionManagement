@@ -44,7 +44,9 @@ class ManagementGUI
 
     public const COLUMN_FIRST_NAME = 'firstname';
     public const COLUMN_LAST_NAME = 'lastname';
+    public const COLUMN_USERNAME = 'login';
     public const COLUMN_EMAIL = 'email';
+    public const COLUMN_LAST_LOG_IN = 'last_login';
     public const COLUMN_LAST_LOGIN_IP = 'last_login_ip';
     public const COLUMN_LOGGED_IN = 'logged_in';
     public const COLUMN_RELOING_AUTHORIZED_UNTIL = 'relogin_authorized_until';
@@ -238,6 +240,7 @@ class ManagementGUI
         $filter_inputs = [
             self::COLUMN_FIRST_NAME => $field_factory->text($this->lng->txt('firstname')),
             self::COLUMN_LAST_NAME => $field_factory->text($this->lng->txt('lastname')),
+            self::COLUMN_USERNAME => $field_factory->text($this->lng->txt('username')),
             self::COLUMN_EMAIL => $field_factory->text($this->lng->txt('email'))
         ];
 
@@ -263,7 +266,10 @@ class ManagementGUI
             [
                 self::COLUMN_FIRST_NAME => $column_factory->text($this->lng->txt('firstname')),
                 self::COLUMN_LAST_NAME => $column_factory->text($this->lng->txt('lastname')),
+                self::COLUMN_USERNAME => $column_factory->text($this->lng->txt('username')),
                 self::COLUMN_EMAIL => $column_factory->eMail($this->lng->txt('email')),
+                self::COLUMN_LAST_LOG_IN => $column_factory
+                    ->date($this->lng->txt('last_login'), $this->buildUserDateFormat()),
                 self::COLUMN_LAST_LOGIN_IP => $column_factory->text($this->pl->txt('ip'))
                     ->withIsSortable(false),
                 self::COLUMN_LOGGED_IN => $column_factory->boolean(
@@ -277,6 +283,7 @@ class ManagementGUI
                         $this->lng->txt('logged_in')
                     )
                 )->withIsSortable(false),
+
                 self::COLUMN_RELOING_AUTHORIZED_UNTIL => $column_factory
                     ->date($this->pl->txt('relogin_authorized_until'), $this->buildUserDateFormat())
                     ->withIsSortable(false)
