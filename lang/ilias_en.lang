@@ -1,13 +1,13 @@
 <!-- language file start -->
-affected_roles_label#:#Roles With a Login-Limit
 affected_roles_byline#:#Members of the selected roles will be checked for existing logins.
+affected_roles_label#:#Roles With a Login-Limit
 already_logged_in#:#There already is a user with this account on the platform. Please call a supervisor.
-anchor_object_types_label#:#Object Types
 anchor_object_types_byline#:#Selected object types show a tab to manage sessions of participants.
+anchor_object_types_label#:#Object Types
 authorize_relogin#:#Authorise for a Relogin
 currently_logged_in#:#Currently Logged In
 ip#:#IP of Last Login
 manage_sessions#:#Manage Access of Participants
 relogin_authorized_until#:#Authorised for a Relogin Until
-relogin_validity_label#:#Validity
 relogin_validity_byline#:#Validity of the authorisation to relogin in minutes.
+relogin_validity_label#:#Validity
