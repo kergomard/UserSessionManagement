@@ -88,14 +88,14 @@ class SessionsDataRetrieval implements DataRetrieval
     ): ?int {
         return count($this->getCourseMemberIds());
     }
-    
+
     /**
      * @return array<int>
      */
     public function getAccessibleAndFilteredMemberIds(): array
     {
         return array_map(
-            fn(array $v): int => $v['usr_id'], 
+            fn(array $v): int => $v['usr_id'],
             $this->filterCourseMembers(
                 \ilObjUser::_getUsersForIds($this->getCourseMemberIds())
             )
@@ -136,9 +136,9 @@ class SessionsDataRetrieval implements DataRetrieval
             static function (array $a, array $b) use ($order_array): int {
                 foreach($order_array as $key => $direction) {
                     if ($direction === 'ASC') {
-                        $relative_position = strcasecmp($a[$key], $b[$key]);
+                        $relative_position = strcasecmp($a[$key] ?? '', $b[$key] ?? '');
                     } else {
-                        $relative_position = strcasecmp($b[$key], $a[$key]);
+                        $relative_position = strcasecmp($b[$key] ?? '', $a[$key] ?? '');
                     }
                     if ($relative_position > 0) {
                         return $relative_position;
