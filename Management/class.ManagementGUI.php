@@ -330,10 +330,14 @@ class ManagementGUI
     {
         $user_format = $this->user->getDateFormat();
         if ($this->user->getTimeFormat() === (string) \ilCalendarSettings::TIME_FORMAT_24) {
-            return $this->data_factory->dateFormat()->withTime24($user_format);
+            return $this->data_factory->dateFormat()->amend($user_format)
+                ->space()->hours24()->colon()->minutes()->colon()->seconds()
+                ->get();
         }
 
-        return $this->data_factory->dateFormat()->withTime12($user_format);
+        return $this->data_factory->dateFormat()->amend($user_format)
+                ->space()->hours12()->colon()->minutes()->colon()->seconds()->space()->meridiem()
+                ->get();
     }
 
     /*
