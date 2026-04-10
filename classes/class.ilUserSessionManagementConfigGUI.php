@@ -113,7 +113,12 @@ class ilUserSessionManagementConfigGUI extends ilPluginConfigGUI
                     $this->plugin_object->txt('affected_roles_label'),
                     $roles,
                     $this->plugin_object->txt('affected_roles_byline')
-                )->withValue($config->getAffectedRoles()),
+                )->withValue(
+                    array_filter(
+                        $config->getAffectedRoles(),
+                        fn (int $v): bool => array_key_exists($v, $roles)
+                    )
+                ),
                 'relogin_validity' => $ff->numeric(
                     $this->plugin_object->txt('relogin_validity_label'),
                     $this->plugin_object->txt('relogin_validity_byline')
