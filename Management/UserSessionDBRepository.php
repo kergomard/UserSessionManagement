@@ -111,7 +111,7 @@ class UserSessionDBRepository implements UserSessionRepository
                 $row_data
             );
 
-        if (array_key_exists(ManagementGUI::COLUMN_RELOING_AUTHORIZED_UNTIL, $row_data)) {
+        if (!$row_data[ManagementGUI::COLUMN_LOGGED_IN]) {
             return $row->withDisabledAction(ManagementGUI::ACTION_STRING);
         }
 
