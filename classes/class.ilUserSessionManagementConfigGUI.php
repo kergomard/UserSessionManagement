@@ -110,12 +110,12 @@ class ilUserSessionManagementConfigGUI extends ilPluginConfigGUI
             $this->ctrl->getFormActionByClass(self::class, 'save'),
             [
                 'roles' => $ff->multiSelect(
-                    $this->plugin_object->txt('affected_roles_label'),
+                    $this->plugin_object->txt('unrestricted_roles_label'),
                     $roles,
-                    $this->plugin_object->txt('affected_roles_byline')
+                    $this->plugin_object->txt('unrestricted_roles_byline')
                 )->withValue(
                     array_filter(
-                        $config->getAffectedRoles(),
+                        $config->getUnrestrictedRoles(),
                         fn (int $v): bool => array_key_exists($v, $roles)
                     )
                 ),

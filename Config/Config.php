@@ -35,14 +35,14 @@ class Config
 
 
     public function __construct(
-        private array $affected_roles = [],
+        private array $unrestricted_roles = [],
         private int $relogin_validity = 5
     ) {
     }
 
-    public function getAffectedRoles(): array
+    public function getUnrestrictedRoles(): array
     {
-        return $this->affected_roles;
+        return $this->unrestricted_roles;
     }
 
     public function getReloginValidity(): int

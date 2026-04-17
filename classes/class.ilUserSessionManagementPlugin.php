@@ -24,7 +24,7 @@ class ilUserSessionManagementPlugin extends ilUserInterfaceHookPlugin
     public const PLUGIN_ID = 'usm';
     private const PLUGIN_NAME = 'UserSessionManagement';
 
-    public const VERSION = '0.0.1';
+    public const VERSION = '0.3.0';
 
     private LocalDIC $local_dic;
     private Config $config;
@@ -134,12 +134,12 @@ class ilUserSessionManagementPlugin extends ilUserInterfaceHookPlugin
 
     private function doesUserNeedChecking(): bool
     {
-        foreach ($this->config->getAffectedRoles() as $role) {
+        foreach ($this->config->getUnrestrictedRoles() as $role) {
             if ($this->rbacreview->isAssigned($this->user->getId(), $role)) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     private function isCurrentUserAllowed(): bool

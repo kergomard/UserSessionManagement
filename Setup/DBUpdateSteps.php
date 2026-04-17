@@ -28,6 +28,46 @@ class DBUpdateSteps implements \ilDatabaseUpdateSteps
         $this->db = $db;
     }
 
+    private function migrateAffectedRolesToUnrestrictedRoles(
+        \stdClass $current_values
+    ): void {
+        $global_roles = array_map(
+            fn (\stdClass $v): int => $v->rol_id,
+            $this->db->fetchAll(
+                $this->db->query(
+                    'SELECT rol_id FROM rbac_fa WHERE parent = '
+                    . ROLE_FOLDER_ID
+                    . ' AND assign = "y"'
+
+                ),
+                \ilDBConstants::FETCHMODE_OBJECT
+            )
+        );
+
+        $affected_roles = explode(
+            ',',
+            $current_values->affected_roles
+        );
+
+        $unrestricted_roles = array_diff($global_roles, $affected_roles);
+
+        $this->db->manipulate('TRUNCATE TABLE ' . ConfigRepo::CONFIG_TABLE);
+        $this->db->insert(
+            ConfigRepo::CONFIG_TABLE,
+            [
+                'affected_roles' => [
+                    \ilDBConstants::T_TEXT, $current_values->affected_roles
+                ],
+                'relogin_validity' => [
+                    \ilDBConstants::T_INTEGER, $current_values->relogin_validity
+                ],
+                'unrestricted_roles' => [
+                    \ilDBConstants::T_TEXT, implode(',', $unrestricted_roles)
+                ]
+            ]
+        );
+    }
+
     public function step_1(): void
     {
         if (!$this->db->tableExists(UserSessionDBRepository::TABLE_NAME_SESSIONS)) {
@@ -72,4 +112,36 @@ class DBUpdateSteps implements \ilDatabaseUpdateSteps
         }
     }
 
+    public function step_2(): void
+    {
+        if (!$this->db->tableColumnExists(
+            ConfigRepo::CONFIG_TABLE,
+            'unrestricted_roles'
+        )) {
+            $this->db->addTableColumn(
+                ConfigRepo::CONFIG_TABLE,
+                'unrestricted_roles',
+                [
+                        'type' => \ilDBConstants::T_TEXT,
+                        'length' => 512,
+                        'notnull' => true
+                ]
+            );
+
+            $current_values = $this->db->fetchObject(
+                $this->db->query(
+                    'SELECT * FROM ' . ConfigRepo::CONFIG_TABLE
+                )
+            );
+
+            if ($current_values !== null) {
+                $this->migrateAffectedRolesToUnrestrictedRoles($current_values);
+            }
+
+            $this->db->dropTableColumn(
+                ConfigRepo::CONFIG_TABLE,
+                'affected_roles'
+            );
+        }
+    }
 }

@@ -40,8 +40,8 @@ class DBRepository implements Repository
         $this->db->insert(
             self::CONFIG_TABLE,
             [
-                'affected_roles' => [
-                    \ilDBConstants::T_TEXT, implode(',', $config->getAffectedRoles())
+                'unrestricted_roles' => [
+                    \ilDBConstants::T_TEXT, implode(',', $config->getUnrestrictedRoles())
                 ],
                 'relogin_validity' => [
                     \ilDBConstants::T_INTEGER, $config->getReloginValidity()
@@ -56,15 +56,15 @@ class DBRepository implements Repository
             return new Config();
         }
 
-        $affected_rows = $values->affected_roles === ''
+        $unrestricted_roles = $values->unrestricted_roles === ''
             ? []
             : array_map(
                 static fn(string $v): int => (int) $v,
-                explode(',', $values->affected_roles)
+                explode(',', $values->unrestricted_roles)
             );
 
         return new Config(
-            $affected_rows,
+            $unrestricted_roles,
             $values->relogin_validity
         );
     }
