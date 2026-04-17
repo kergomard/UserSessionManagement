@@ -16,8 +16,6 @@ declare(strict_types=1);
 
 namespace kergomard\UserSessionManagement\Management;
 
-use kergomard\UserSessionManagement\Config\Config;
-
 use ILIAS\UI\Component\Table\DataRetrieval;
 use ILIAS\UI\Component\Table\DataRowBuilder;
 use ILIAS\Data\Range;

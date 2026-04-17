@@ -59,7 +59,6 @@ class ManagementGUI
     private \ilTabsGUI $tabs_gui;
     private \ilHelpGUI $help;
     private \ilLocatorGUI $locator;
-    private \ilComponentFactory $component_factory;
     private ServerRequestInterface $request;
     private ArrayBasedRequestWrapper $query;
     private \ilGlobalTemplateInterface $tpl;
