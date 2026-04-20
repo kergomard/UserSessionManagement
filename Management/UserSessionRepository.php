@@ -14,17 +14,10 @@
 
 namespace kergomard\UserSessionManagement\Management;
 
-use ILIAS\UI\Implementation\Component\Table\DataRowBuilder;
-use ILIAS\UI\Component\Table\DataRow;
-
 interface UserSessionRepository
 {
     public function preloadDataForUserIds(array $user_ids): void;
     public function getSessionForUserId(int $user_id): ?Session;
-    public function getTableRowForUser(
-        DataRowBuilder $row_builder,
-        array $user,
-    ): DataRow;
     public function storeSession(Session $session): void;
     /**
      * @param array<int> $user_ids

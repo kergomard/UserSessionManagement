@@ -16,14 +16,24 @@ declare(strict_types=1);
 
 namespace kergomard\UserSessionManagement\Management;
 
+use ILIAS\UI\Component\Table\DataRowBuilder;
+use ILIAS\UI\Component\Table\DataRow;
+
 class Session
 {
+    private ?int $session_expiry_time = null;
+
     public function __construct(
         private int $user_id,
         private string $session_id,
         private string $login_ip,
         private ?int $relogin_allowed_until = null
     ) {
+        if ($session_id !== '') {
+            $this->session_expiry_time = \ilSession::lookupExpireTime(
+                $this->session_id
+            );
+        }
     }
 
     public function getUserId(): int
@@ -45,5 +55,62 @@ class Session
     {
         return $this->relogin_allowed_until;
     }
-}
 
+    public function isSessionActive(): bool
+    {
+        return $this->session_expiry_time !== null
+            && $this->session_expiry_time > time();
+    }
+
+    public function getAsTableRow(
+        DataRowBuilder $row_builder,
+        array $user_data,
+        \DateTimeZone $current_user_timezone
+    ): DataRow {
+        $row_data = [
+            ManagementGUI::ROW_ID => $this->user_id,
+            ManagementGUI::COLUMN_FIRST_NAME => $user_data['firstname'],
+            ManagementGUI::COLUMN_LAST_NAME => $user_data['lastname'],
+            ManagementGUI::COLUMN_USERNAME => $user_data['login'],
+            ManagementGUI::COLUMN_EMAIL => $user_data['email'],
+            ManagementGUI::COLUMN_LOGGED_IN => false
+        ];
+
+        if ($user_data['last_login'] !== null) {
+            $row_data[ManagementGUI::COLUMN_LAST_LOG_IN] = (new \DateTimeImmutable(
+                $user_data['last_login']
+            ))->setTimezone($current_user_timezone);
+        }
+
+        if ($this->session_id === '') {
+            return $row_builder->buildDataRow(
+                (string) $user_data['usr_id'],
+                $row_data
+            )->withDisabledAction(ManagementGUI::ACTION_STRING);
+        }
+
+        $row_data[ManagementGUI::COLUMN_LAST_LOGIN_IP] = $this->login_ip;
+
+        if ($this->isSessionActive()) {
+            $row_data[ManagementGUI::COLUMN_LOGGED_IN] = true;
+        }
+
+        if ($this->relogin_allowed_until !== null
+            && $this->relogin_allowed_until > time()) {
+            $row_data[ManagementGUI::COLUMN_RELOING_AUTHORIZED_UNTIL] = (new \DateTimeImmutable(
+                '@' . $this->relogin_allowed_until
+            ))->setTimezone($current_user_timezone);
+        }
+
+        $row = $row_builder->buildDataRow(
+                (string) $user_data['usr_id'],
+                $row_data
+            );
+
+        if (!$row_data[ManagementGUI::COLUMN_LOGGED_IN]) {
+            return $row->withDisabledAction(ManagementGUI::ACTION_STRING);
+        }
+
+        return $row;
+    }
+}

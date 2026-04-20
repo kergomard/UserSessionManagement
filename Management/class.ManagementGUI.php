@@ -234,13 +234,27 @@ class ManagementGUI
 
     private function buildFilter(): Filter
     {
-        list($url_builder) = $this->acquireParameters();
         $field_factory = $this->ui_factory->input()->field();
         $filter_inputs = [
-            self::COLUMN_FIRST_NAME => $field_factory->text($this->lng->txt('firstname')),
-            self::COLUMN_LAST_NAME => $field_factory->text($this->lng->txt('lastname')),
-            self::COLUMN_USERNAME => $field_factory->text($this->lng->txt('username')),
-            self::COLUMN_EMAIL => $field_factory->text($this->lng->txt('email'))
+            self::COLUMN_FIRST_NAME => $field_factory->text(
+                $this->lng->txt('firstname')
+            ),
+            self::COLUMN_LAST_NAME => $field_factory->text(
+                $this->lng->txt('lastname')
+            ),
+            self::COLUMN_USERNAME => $field_factory->text(
+                $this->lng->txt('username')
+            ),
+            self::COLUMN_EMAIL => $field_factory->text(
+                $this->lng->txt('email')
+            ),
+            self::COLUMN_LOGGED_IN => $field_factory->select(
+                $this->pl->txt('currently_logged_in'),
+                [
+                    'y' => $this->lng->txt('yes'),
+                    'n' => $this->lng->txt('no')
+                ]
+            )
         ];
 
         $active = array_fill(0, count($filter_inputs), true);
@@ -263,14 +277,25 @@ class ManagementGUI
         return $this->ui_factory->table()->data(
             $this->pl->txt('manage_sessions'),
             [
-                self::COLUMN_FIRST_NAME => $column_factory->text($this->lng->txt('firstname')),
-                self::COLUMN_LAST_NAME => $column_factory->text($this->lng->txt('lastname')),
-                self::COLUMN_USERNAME => $column_factory->text($this->lng->txt('username')),
-                self::COLUMN_EMAIL => $column_factory->eMail($this->lng->txt('email')),
-                self::COLUMN_LAST_LOG_IN => $column_factory
-                    ->date($this->lng->txt('last_login'), $this->buildUserDateFormat()),
-                self::COLUMN_LAST_LOGIN_IP => $column_factory->text($this->pl->txt('ip'))
-                    ->withIsSortable(false),
+                self::COLUMN_FIRST_NAME => $column_factory->text(
+                    $this->lng->txt('firstname')
+                ),
+                self::COLUMN_LAST_NAME => $column_factory->text(
+                    $this->lng->txt('lastname')
+                ),
+                self::COLUMN_USERNAME => $column_factory->text(
+                    $this->lng->txt('username')
+                ),
+                self::COLUMN_EMAIL => $column_factory->eMail(
+                    $this->lng->txt('email')
+                ),
+                self::COLUMN_LAST_LOG_IN => $column_factory->date(
+                    $this->lng->txt('last_login'),
+                    $this->buildUserDateFormat()
+                ),
+                self::COLUMN_LAST_LOGIN_IP => $column_factory->text(
+                    $this->pl->txt('ip')
+                ),
                 self::COLUMN_LOGGED_IN => $column_factory->boolean(
                     $this->pl->txt('currently_logged_in'),
                     $this->ui_factory->symbol()->icon()->custom(
@@ -281,13 +306,14 @@ class ManagementGUI
                         \ilUtil::getImagePath('standard/icon_unchecked.svg'),
                         $this->lng->txt('logged_in')
                     )
-                )->withIsSortable(false),
-
+                ),
                 self::COLUMN_RELOING_AUTHORIZED_UNTIL => $column_factory
                     ->date($this->pl->txt('relogin_authorized_until'), $this->buildUserDateFormat())
                     ->withIsSortable(false)
             ],
-            $this->sessions_table_data_retriever->withObject($this->object)->withFilterData($this->filter_data)
+            $this->sessions_table_data_retriever
+                ->withObject($this->object)
+                ->withFilterData($this->filter_data)
         )->withActions($this->buildActions())
         ->withRequest($this->request);
     }

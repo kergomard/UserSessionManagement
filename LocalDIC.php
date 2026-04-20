@@ -54,8 +54,11 @@ class LocalDIC extends PimpleContainer
         $this['config_repo'] = static fn($c): ConfigDBRepository
             => new ConfigDBRepository($DIC['ilDB']);
         $this['user_session_repo'] = static fn($c): UserSessionDBRepository
-            => new UserSessionDBRepository($DIC['ilDB'], $c['ilUser']);
+            => new UserSessionDBRepository($DIC['ilDB']);
         $this['sessions_table_data_retriever'] = static fn($c): SessionsDataRetrieval
-            => new SessionsDataRetrieval($c['user_session_repo']);
+            => new SessionsDataRetrieval(
+                $c['ilUser'],
+                $c['user_session_repo']
+            );
     }
 }

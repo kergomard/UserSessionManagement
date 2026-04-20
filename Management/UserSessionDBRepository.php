@@ -16,9 +16,6 @@ declare(strict_types=1);
 
 namespace kergomard\UserSessionManagement\Management;
 
-use ILIAS\UI\Component\Table\DataRowBuilder;
-use ILIAS\UI\Component\Table\DataRow;
-
 class UserSessionDBRepository implements UserSessionRepository
 {
     public const TABLE_NAME_SESSIONS = 'xusm_sessions';
@@ -26,13 +23,13 @@ class UserSessionDBRepository implements UserSessionRepository
     private array $session_data = [];
 
     public function __construct(
-        private readonly \ilDBInterface $db,
-        private readonly \ilObjUser $user
+        private readonly \ilDBInterface $db
     ) {
     }
 
-    public function preloadDataForUserIds(array $user_ids): void
-    {
+    public function preloadDataForUserIds(
+        array $user_ids
+    ): void {
         if ($user_ids === []) {
             return;
         }
@@ -41,85 +38,39 @@ class UserSessionDBRepository implements UserSessionRepository
             'SELECT * FROM ' . self::TABLE_NAME_SESSIONS .
                 ' WHERE ' . $this->db->in('user_id', $user_ids, false, \ilDBConstants::T_INTEGER)
         );
-
-        while ($session = $query->fetchObject()) {
-            $this->session_data[$session->user_id] = $session;
-        }
-    }
-
-    public function getSessionForUserId(int $user_id): ?Session
-    {
-        if (!array_key_exists($user_id, $this->session_data)) {
-            $this->session_data[$user_id] = $this->db->fetchObject(
-                $this->db->query(
-                    'SELECT * FROM ' . self::TABLE_NAME_SESSIONS .
-                        ' WHERE user_id = ' . $this->db->quote($user_id, \ilDBConstants::T_INTEGER)
-                )
+        while ($session = $this->db->fetchObject($query)) {
+            $this->session_data[$session->user_id] = $this->buildSessionFromDBRow(
+                $session
             );
         }
 
-        if ($this->session_data[$user_id] === null) {
-            return null;
-        }
-
-        return $this->buildSessionFromDBRow($this->session_data[$user_id]);
+        $this->completeSessionData($user_ids);
     }
 
-    public function getTableRowForUser(
-        DataRowBuilder $row_builder,
-        array $user
-    ): DataRow {
-        $session = $this->getSessionForUserId($user['usr_id']);
-
-        $row_data = [
-            ManagementGUI::ROW_ID => $user['usr_id'],
-            ManagementGUI::COLUMN_FIRST_NAME => $user['firstname'],
-            ManagementGUI::COLUMN_LAST_NAME => $user['lastname'],
-            ManagementGUI::COLUMN_USERNAME => $user['login'],
-            ManagementGUI::COLUMN_EMAIL => $user['email'],
-            ManagementGUI::COLUMN_LOGGED_IN => false
-        ];
-
-        if ($user['last_login'] !== null) {
-            $row_data[ManagementGUI::COLUMN_LAST_LOG_IN] = (new \DateTimeImmutable(
-                $user['last_login']
-            ))->setTimezone(new \DateTimeZone($this->user->getTimeZone()));
+    public function getSessionForUserId(
+        int $user_id
+    ): ?Session {
+        if (array_key_exists($user_id, $this->session_data)) {
+            return $this->session_data[$user_id];
         }
 
-        if ($session === null) {
-            return $row_builder->buildDataRow(
-                (string) $user['usr_id'],
-                $row_data
-            )->withDisabledAction(ManagementGUI::ACTION_STRING);
+        $session_data = $this->db->fetchObject(
+            $this->db->query(
+                'SELECT * FROM ' . self::TABLE_NAME_SESSIONS .
+                    ' WHERE user_id = ' . $this->db->quote($user_id, \ilDBConstants::T_INTEGER)
+            )
+        );
+
+        if ($session_data === null) {
+            return $this->buildEmptySession($user_id);
         }
 
-        $row_data[ManagementGUI::COLUMN_LAST_LOGIN_IP] = $session->getLoginIp();
-
-        if (\ilSession::lookupExpireTime($session->getSessionId()) > time()) {
-            $row_data[ManagementGUI::COLUMN_LOGGED_IN] = true;
-        }
-
-        if ($session->getReloginAllowedUntil() !== null
-            && $session->getReloginAllowedUntil() > time()) {
-            $row_data[ManagementGUI::COLUMN_RELOING_AUTHORIZED_UNTIL] = (new \DateTimeImmutable(
-                '@' . $session->getReloginAllowedUntil()
-            ))->setTimezone(new \DateTimeZone($this->user->getTimeZone()));
-        }
-
-        $row = $row_builder->buildDataRow(
-                (string) $user['usr_id'],
-                $row_data
-            );
-
-        if (!$row_data[ManagementGUI::COLUMN_LOGGED_IN]) {
-            return $row->withDisabledAction(ManagementGUI::ACTION_STRING);
-        }
-
-        return $row;
+        return $this->buildSessionFromDBRow($session_data);
     }
 
-    public function storeSession(Session $session): void
-    {
+    public function storeSession(
+        Session $session
+    ): void {
         $this->db->replace(
             self::TABLE_NAME_SESSIONS,
             ['user_id' => [\ilDBConstants::T_INTEGER, $session->getUserId()]],
@@ -142,14 +93,35 @@ class UserSessionDBRepository implements UserSessionRepository
         );
     }
 
-    private function buildSessionFromDBRow(\stdClass $row): Session
-    {
+    private function buildSessionFromDBRow(
+        \stdClass $row
+    ): Session {
         return new Session(
             $row->user_id,
             $row->session_id,
             $row->last_login_ip,
             $row->relogin_allowed_until
         );
+    }
+
+    private function buildEmptySession(
+        int $user_id
+    ): Session {
+        return $this->session_data[$user_id] = new Session(
+                $user_id,
+                '',
+                ''
+            );
+    }
+
+    private function completeSessionData(
+        array $user_ids
+    ): void {
+        foreach ($user_ids as $user_id) {
+            if (!array_key_exists($user_id, $this->session_data)) {
+                $this->session_data[$user_id] = $this->buildEmptySession($user_id);
+            }
+        }
     }
 }
 

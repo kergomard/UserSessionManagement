@@ -34,6 +34,7 @@ class SessionsDataRetrieval implements DataRetrieval
     private ?array $course_member_ids = null;
 
     public function __construct(
+        private \ilObjUser $current_user,
         private UserSessionRepository $user_session_repo,
     ) {
     }
@@ -63,7 +64,7 @@ class SessionsDataRetrieval implements DataRetrieval
         ?array $filter_data,
         ?array $additional_parameters
     ): \Generator {
-        $course_members =$this->sortAndLimitCourseMembers(
+        $course_members =$this->orderAndLimitCourseMembers(
             $this->filterCourseMembers(
                 \ilObjUser::_getUsersForIds($this->getCourseMemberIds())
             ),
@@ -72,10 +73,16 @@ class SessionsDataRetrieval implements DataRetrieval
         );
         $this->user_session_repo->preloadDataForUserIds($this->getCourseMemberIds());
 
+        $current_user_timezone = new \DateTimeZone(
+            $this->current_user->getTimeZone()
+        );
         foreach($course_members as $course_member) {
-            yield $this->user_session_repo->getTableRowForUser(
+            yield $this->user_session_repo->getSessionForUserId(
+                $course_member['usr_id']
+            )->getAsTableRow(
                 $row_builder,
-                $course_member
+                $course_member,
+                $current_user_timezone
             );
         }
     }
@@ -112,9 +119,9 @@ class SessionsDataRetrieval implements DataRetrieval
 
         return array_filter(
             $course_members,
-            static function(array $v)use ($filter_values): bool {
-                foreach ($filter_values as $key => $value) {
-                    if (stristr($v[$key], $value) === false) {
+            function(array $v)use ($filter_values): bool {
+                foreach ($filter_values as $key => $filter_value) {
+                    if (!$this->isToBeKept($key, $filter_value, $v)) {
                         return false;
                     }
                 }
@@ -123,7 +130,7 @@ class SessionsDataRetrieval implements DataRetrieval
         );
     }
 
-    private function sortAndLimitCourseMembers(
+    private function orderAndLimitCourseMembers(
         array $course_members,
         Range $range,
         Order $order
@@ -131,13 +138,14 @@ class SessionsDataRetrieval implements DataRetrieval
         $order_array = $order->get();
         usort(
             $course_members,
-            static function (array $a, array $b) use ($order_array): int {
+            function (array $a, array $b) use ($order_array): int {
                 foreach($order_array as $key => $direction) {
-                    if ($direction === 'ASC') {
-                        $relative_position = strcasecmp($a[$key] ?? '', $b[$key] ?? '');
-                    } else {
-                        $relative_position = strcasecmp($b[$key] ?? '', $a[$key] ?? '');
-                    }
+                    $relative_position = $this->getRelativPosition(
+                        $key,
+                        $a,
+                        $b,
+                        $direction
+                    );
                     if ($relative_position > 0) {
                         return $relative_position;
                     }
@@ -147,6 +155,62 @@ class SessionsDataRetrieval implements DataRetrieval
             }
         );
         return array_slice($course_members, $range->getStart(), $range->getLength());
+    }
+
+    private function isToBeKept(
+        string $filter_key,
+        string $filter_value,
+        array $user_values
+    ): bool {
+        if ($filter_key === ManagementGUI::COLUMN_LOGGED_IN) {
+            $is_session_active = $this->user_session_repo
+                ->getSessionForUserId($user_values['usr_id'])
+                ->isSessionActive();
+            $must_be_active = $filter_value === 'y';
+
+            return $is_session_active === $must_be_active;
+        }
+
+        if (stristr($user_values[$filter_key], $filter_value) === false) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function getRelativPosition(
+        string $order_key,
+        array $user_a_values,
+        array $user_b_values,
+        string $direction
+    ): int {
+        if ($order_key === ManagementGUI::COLUMN_LOGGED_IN) {
+            $user_a_session_active = $this->user_session_repo
+                ->getSessionForUserId($user_a_values['usr_id'])
+                ->isSessionActive();
+            $user_b_session_active = $this->user_session_repo
+                ->getSessionForUserId($user_b_values['usr_id'])
+                ->isSessionActive();
+
+            if ($user_a_session_active === $user_b_values) {
+                return 0;
+            }
+
+            if ($direction === 'ASC' && $user_a_session_active > $user_b_session_active
+                || $direction === 'DSC' && $user_a_session_active < $user_b_session_active) {
+                return 1;
+            }
+
+            return -1;
+        }
+
+        $value_a = $user_a_values[$order_key] ?? '';
+        $value_b = $user_b_values[$order_key] ?? '';
+        if ($direction === 'ASC') {
+            return strcasecmp($value_a, $value_b);
+        }
+
+        return strcasecmp($value_b, $value_a);
     }
 
     private function getCourseMemberIds(): array
