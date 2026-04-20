@@ -8,10 +8,10 @@ course can see all logged in members of the course and allow them to selectively
 to relogin.
 
 **Minimum ILIAS Version:**
-9.0
+10.0
 
 **Maximum ILIAS Version:**
-9.99
+10.99
 
 **Responsible Developer:**
 Stephan Kergomard - office@kergomard.ch

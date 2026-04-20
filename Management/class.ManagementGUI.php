@@ -113,6 +113,7 @@ class ManagementGUI
         $this->object = new \ilObjCourse($ref_id);
 
         $this->lng->loadLanguageModule('crs');
+        $this->lng->loadLanguageModule('cont');
 
         $this->ctrl->setParameterByClass(self::class, 'ref_id', $ref_id);
         $this->ctrl->setParameterByClass(\ilObjCourseGUI::class, 'ref_id', $ref_id);
@@ -372,15 +373,13 @@ class ManagementGUI
     private function setTitleAndDescription(): void
     {
         $this->tpl->setTitle(
-            strip_tags(
-                $this->object->getPresentationTitle(),
-                \ilObjectGUI::ALLOWED_TAGS_IN_TITLE_AND_DESCRIPTION
+            $this->refinery->encode()->htmlSpecialCharsAsEntities()->transform(
+                $this->object->getPresentationTitle()
             )
         );
         $this->tpl->setDescription(
-            strip_tags(
-                $this->object->getLongDescription(),
-                \ilObjectGUI::ALLOWED_TAGS_IN_TITLE_AND_DESCRIPTION
+            $this->refinery->encode()->htmlSpecialCharsAsEntities()->transform(
+                $this->object->getLongDescription()
             )
         );
 
@@ -544,7 +543,7 @@ class ManagementGUI
         $this->tabs_gui->addTab(
             'news_timeline',
             $this->lng->txt('cont_news_timeline_tab'),
-            $this->ctrl->getLinkTargetByClass([\ilRepositoryGUI::class, \ilObjCourseGUI::classe, \ilNewsTimelineGUI::class], 'show')
+            $this->ctrl->getLinkTargetByClass([\ilRepositoryGUI::class, \ilObjCourseGUI::class, \ilNewsTimelineGUI::class], 'show')
         );
     }
 }

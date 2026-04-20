@@ -15,8 +15,8 @@
 $id = ilUserSessionManagementPlugin::PLUGIN_ID;
 $version = ilUserSessionManagementPlugin::VERSION;
 
-$ilias_min_version = '9.0';
-$ilias_max_version = '9.999';
+$ilias_min_version = '10.0';
+$ilias_max_version = '10.999';
 
 $responsible = 'Stephan Kergomard';
 $responsible_mail = 'office@kergomard.ch';
