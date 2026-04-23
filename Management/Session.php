@@ -21,19 +21,14 @@ use ILIAS\UI\Component\Table\DataRow;
 
 class Session
 {
-    private ?int $session_expiry_time = null;
-
     public function __construct(
         private int $user_id,
-        private string $session_id,
-        private string $login_ip,
-        private ?int $relogin_allowed_until = null
+        private string $session_id = '',
+        private string $login_ip = '',
+        private ?int $relogin_allowed_until = null,
+        private ?int $expiration_time = null,
+        private ?int $user_id_from_session = null
     ) {
-        if ($session_id !== '') {
-            $this->session_expiry_time = \ilSession::lookupExpireTime(
-                $this->session_id
-            );
-        }
     }
 
     public function getUserId(): int
@@ -58,8 +53,9 @@ class Session
 
     public function isSessionActive(): bool
     {
-        return $this->session_expiry_time !== null
-            && $this->session_expiry_time > time();
+        return $this->expiration_time !== null
+            && $this->expiration_time > time()
+            && $this->user_id === $this->user_id_from_session;
     }
 
     public function getAsTableRow(
