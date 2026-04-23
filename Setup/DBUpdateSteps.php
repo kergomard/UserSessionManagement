@@ -70,8 +70,8 @@ class DBUpdateSteps implements \ilDatabaseUpdateSteps
 
     public function step_1(): void
     {
-        if (!$this->db->tableExists(UserSessionDBRepository::TABLE_NAME_SESSIONS)) {
-            $this->db->createTable(UserSessionDBRepository::TABLE_NAME_SESSIONS, [
+        if (!$this->db->tableExists(UserSessionDBRepository::TABLE_NAME_USM_SESSION_DATA)) {
+            $this->db->createTable(UserSessionDBRepository::TABLE_NAME_USM_SESSION_DATA, [
                 'user_id' => [
                     'type' => \ilDBConstants::T_INTEGER,
                     'length' => 8,
@@ -93,7 +93,7 @@ class DBUpdateSteps implements \ilDatabaseUpdateSteps
                 ]
             ]);
             $this->db->addPrimaryKey(
-                UserSessionDBRepository::TABLE_NAME_SESSIONS,
+                UserSessionDBRepository::TABLE_NAME_USM_SESSION_DATA,
                 ['user_id']
             );
         }
