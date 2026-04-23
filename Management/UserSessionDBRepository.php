@@ -18,7 +18,8 @@ namespace kergomard\UserSessionManagement\Management;
 
 class UserSessionDBRepository implements UserSessionRepository
 {
-    public const TABLE_NAME_SESSIONS = 'xusm_sessions';
+    public const TABLE_NAME_USM_SESSION_DATA = 'xusm_sessions';
+    public const TABLE_NAME_ILIAS_SESSION_DATA = 'usr_session';
 
     private array $session_data = [];
 
@@ -35,8 +36,16 @@ class UserSessionDBRepository implements UserSessionRepository
         }
 
         $query = $this->db->query(
-            'SELECT * FROM ' . self::TABLE_NAME_SESSIONS .
-                ' WHERE ' . $this->db->in('user_id', $user_ids, false, \ilDBConstants::T_INTEGER)
+            'SELECT u.*, i.expires, i.user_id as i_user_id' . PHP_EOL
+                . 'FROM ' . self::TABLE_NAME_USM_SESSION_DATA . ' u' . PHP_EOL
+                . 'LEFT JOIN ' . self::TABLE_NAME_ILIAS_SESSION_DATA . ' i' . PHP_EOL
+                . 'ON u.session_id = i.session_id' . PHP_EOL
+                . 'WHERE ' . $this->db->in(
+                    'u.user_id',
+                    $user_ids,
+                    false,
+                    \ilDBConstants::T_INTEGER
+                )
         );
         while ($session = $this->db->fetchObject($query)) {
             $this->session_data[$session->user_id] = $this->buildSessionFromDBRow(
@@ -56,8 +65,14 @@ class UserSessionDBRepository implements UserSessionRepository
 
         $session_data = $this->db->fetchObject(
             $this->db->query(
-                'SELECT * FROM ' . self::TABLE_NAME_SESSIONS .
-                    ' WHERE user_id = ' . $this->db->quote($user_id, \ilDBConstants::T_INTEGER)
+                'SELECT u.*, i.expires, i.user_id as i_user_id' . PHP_EOL
+                . 'FROM ' . self::TABLE_NAME_USM_SESSION_DATA . ' u' . PHP_EOL
+                . 'LEFT JOIN ' . self::TABLE_NAME_ILIAS_SESSION_DATA . ' i' . PHP_EOL
+                . 'ON u.session_id = i.session_id' . PHP_EOL
+                . 'WHERE u.user_id = ' . $this->db->quote(
+                    $user_id,
+                    \ilDBConstants::T_INTEGER
+                )
             )
         );
 
@@ -72,7 +87,7 @@ class UserSessionDBRepository implements UserSessionRepository
         Session $session
     ): void {
         $this->db->replace(
-            self::TABLE_NAME_SESSIONS,
+            self::TABLE_NAME_USM_SESSION_DATA,
             ['user_id' => [\ilDBConstants::T_INTEGER, $session->getUserId()]],
             [
                 'session_id' => [\ilDBConstants::T_TEXT, $session->getSessionId()],
@@ -87,7 +102,7 @@ class UserSessionDBRepository implements UserSessionRepository
         int $until
     ): void {
         $this->db->manipulate(
-            'UPDATE ' . self::TABLE_NAME_SESSIONS . ' SET '
+            'UPDATE ' . self::TABLE_NAME_USM_SESSION_DATA . ' SET '
                 . ' relogin_allowed_until= ' . $until
                 . ' WHERE ' . $this->db->in('user_id', $user_ids, false, \ilDBConstants::T_INTEGER)
         );
@@ -100,18 +115,16 @@ class UserSessionDBRepository implements UserSessionRepository
             $row->user_id,
             $row->session_id,
             $row->last_login_ip,
-            $row->relogin_allowed_until
+            $row->relogin_allowed_until,
+            $row->expires,
+            $row->i_user_id
         );
     }
 
     private function buildEmptySession(
         int $user_id
     ): Session {
-        return $this->session_data[$user_id] = new Session(
-                $user_id,
-                '',
-                ''
-            );
+        return $this->session_data[$user_id] = new Session($user_id);
     }
 
     private function completeSessionData(
