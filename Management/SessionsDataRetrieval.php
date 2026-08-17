@@ -184,6 +184,7 @@ class SessionsDataRetrieval implements DataRetrieval
         array $user_b_values,
         string $direction
     ): int {
+        // Handle sorting for "Logged In" status
         if ($order_key === ManagementGUI::COLUMN_LOGGED_IN) {
             $user_a_session_active = $this->user_session_repo
                 ->getSessionForUserId($user_a_values['usr_id'])
@@ -204,6 +205,17 @@ class SessionsDataRetrieval implements DataRetrieval
             return -1;
         }
 
+        // Handle sorting for IP address
+        if ($order_key === ManagementGUI::COLUMN_LAST_LOGIN_IP) {
+            $ip_a = $this->user_session_repo->getSessionForUserId($user_a_values['usr_id'])->getLoginIp();
+            $ip_b = $this->user_session_repo->getSessionForUserId($user_b_values['usr_id'])->getLoginIp();
+            if ($direction === 'ASC') {
+                return strnatcasecmp($ip_a, $ip_b);
+            }
+            return strnatcasecmp($ip_b, $ip_a);
+        }
+
+        // Standard alphabetical sorting for all other basic user fields
         $value_a = $user_a_values[$order_key] ?? '';
         $value_b = $user_b_values[$order_key] ?? '';
         if ($direction === 'ASC') {
