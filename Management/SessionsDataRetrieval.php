@@ -193,7 +193,7 @@ class SessionsDataRetrieval implements DataRetrieval
                 ->getSessionForUserId($user_b_values['usr_id'])
                 ->isSessionActive();
 
-            if ($user_a_session_active === $user_b_values) {
+            if ($user_a_session_active === $user_b_session_active) {
                 return 0;
             }
 
