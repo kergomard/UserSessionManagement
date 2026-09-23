@@ -16,44 +16,29 @@ declare(strict_types=1);
 
 namespace kergomard\UserSessionManagement\Management;
 
-use ILIAS\UI\Component\Table\DataRetrieval;
-use ILIAS\UI\Component\Table\DataRowBuilder;
+use ILIAS\Data\DateFormat\DateFormat;
+use ILIAS\Data\Factory as DataFactory;
 use ILIAS\Data\Range;
 use ILIAS\Data\Order;
+use ILIAS\UI\Component\Table\DataRetrieval;
+use ILIAS\UI\Component\Table\DataRowBuilder;
 
-class SessionsDataRetrieval implements DataRetrieval
+class SessionDataRetrieval implements DataRetrieval
 {
-    private \ilObjCourse $object;
-
-    /**
-     *
-     * @var array<string, string|array>
-     */
-    private array $filter_data;
-
     private ?array $course_member_ids = null;
-
-    public function __construct(
-        private \ilObjUser $current_user,
-        private UserSessionRepository $user_session_repo,
-    ) {
-    }
-
-    public function withObject(\ilObjCourse $object): self {
-        $clone = clone $this;
-        $clone->object = $object;
-        return $clone;
-    }
+    private ?array $course_members = null;
 
     /**
-     *
      * @param array<string, string|array> $filter_data
-     * @return self
      */
-    public function withFilterData (array $filter_data): self {
-        $clone = clone $this;
-        $clone->filter_data = $filter_data;
-        return $clone;
+    public function __construct(
+        private readonly \ilObjUser $current_user,
+        private readonly \ilPlugin $pl,
+        private readonly DataFactory $data_factory,
+        private readonly UserSessionRepository $user_session_repo,
+        private readonly \ilObjCourse $object,
+        private array $filter_data
+    ) {
     }
 
     public function getRows(
@@ -66,7 +51,7 @@ class SessionsDataRetrieval implements DataRetrieval
     ): \Generator {
         $course_members =$this->orderAndLimitCourseMembers(
             $this->filterCourseMembers(
-                \ilObjUser::_getUsersForIds($this->getCourseMemberIds())
+                $this->getCourseMembers()
             ),
             $range,
             $order
@@ -80,9 +65,11 @@ class SessionsDataRetrieval implements DataRetrieval
             yield $this->user_session_repo->getSessionForUserId(
                 $course_member['usr_id']
             )->getAsTableRow(
+                $this->pl,
                 $row_builder,
                 $course_member,
-                $current_user_timezone
+                $current_user_timezone,
+                $this->buildUserDateFormat()
             );
         }
     }
@@ -91,7 +78,11 @@ class SessionsDataRetrieval implements DataRetrieval
         ?array $filter_data,
         ?array $additional_parameters
     ): ?int {
-        return count($this->getCourseMemberIds());
+        return count(
+            $this->filterCourseMembers(
+                $this->getCourseMembers()
+            )
+        );
     }
 
     /**
@@ -119,7 +110,7 @@ class SessionsDataRetrieval implements DataRetrieval
 
         return array_filter(
             $course_members,
-            function(array $v)use ($filter_values): bool {
+            function(array $v) use ($filter_values): bool {
                 foreach ($filter_values as $key => $filter_value) {
                     if (!$this->isToBeKept($key, $filter_value, $v)) {
                         return false;
@@ -192,7 +183,7 @@ class SessionsDataRetrieval implements DataRetrieval
                 ->getSessionForUserId($user_b_values['usr_id'])
                 ->isSessionActive();
 
-            if ($user_a_session_active === $user_b_values) {
+            if ($user_a_session_active === $user_b_session_active) {
                 return 0;
             }
 
@@ -220,5 +211,30 @@ class SessionsDataRetrieval implements DataRetrieval
         }
 
         return $this->course_member_ids;
+    }
+
+    private function getCourseMembers(): array
+    {
+        if ($this->course_members === null) {
+            $this->course_members = \ilObjUser::_getUsersForIds(
+                $this->getCourseMemberIds()
+            );
+        }
+
+        return $this->course_members;
+    }
+
+    private function buildUserDateFormat(): DateFormat
+    {
+        $user_format = $this->current_user->getDateFormat();
+        if ($this->current_user->getTimeFormat() === (string) \ilCalendarSettings::TIME_FORMAT_24) {
+            return $this->data_factory->dateFormat()->amend($user_format)
+                ->space()->hours24()->colon()->minutes()->colon()->seconds()
+                ->get();
+        }
+
+        return $this->data_factory->dateFormat()->amend($user_format)
+                ->space()->hours12()->colon()->minutes()->colon()->seconds()->space()->meridiem()
+                ->get();
     }
 }

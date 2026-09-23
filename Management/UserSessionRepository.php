@@ -18,6 +18,11 @@ interface UserSessionRepository
 {
     public function preloadDataForUserIds(array $user_ids): void;
     public function getSessionForUserId(int $user_id): ?Session;
+    public function buildSession(
+        int $user_id,
+        string $session_id,
+        string $last_login_ip
+    ): Session;
     public function storeSession(Session $session): void;
     /**
      * @param array<int> $user_ids

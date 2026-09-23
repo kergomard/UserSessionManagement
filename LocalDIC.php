@@ -17,8 +17,6 @@ declare(strict_types=1);
 namespace kergomard\UserSessionManagement;
 
 use kergomard\UserSessionManagement\Config\DBRepository as ConfigDBRepository;
-use kergomard\UserSessionManagement\Management\UserSessionDBRepository;
-use kergomard\UserSessionManagement\Management\SessionsDataRetrieval;
 
 use Pimple\Container as PimpleContainer;
 use ILIAS\DI\Container as ILIASContainer;
@@ -26,7 +24,6 @@ use ILIAS\UI\Factory as UIFactory;
 use ILIAS\UI\Renderer as UIRenderer;
 use ILIAS\Refinery\Factory as Refinery;
 use ILIAS\HTTP\Services as HTTPServices;
-use ILIAS\Data\Factory as DataFactory;
 
 class LocalDIC extends PimpleContainer
 {
@@ -53,12 +50,5 @@ class LocalDIC extends PimpleContainer
 
         $this['config_repo'] = static fn($c): ConfigDBRepository
             => new ConfigDBRepository($DIC['ilDB']);
-        $this['user_session_repo'] = static fn($c): UserSessionDBRepository
-            => new UserSessionDBRepository($DIC['ilDB']);
-        $this['sessions_table_data_retriever'] = static fn($c): SessionsDataRetrieval
-            => new SessionsDataRetrieval(
-                $c['ilUser'],
-                $c['user_session_repo']
-            );
     }
 }

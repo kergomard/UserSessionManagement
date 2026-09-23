@@ -16,24 +16,31 @@ declare(strict_types=1);
 
 namespace kergomard\UserSessionManagement\Management;
 
+use ILIAS\Data\DateFormat\DateFormat;
 use ILIAS\UI\Component\Table\DataRowBuilder;
 use ILIAS\UI\Component\Table\DataRow;
 
 class Session
 {
     public function __construct(
-        private int $user_id,
-        private string $session_id = '',
-        private string $login_ip = '',
-        private ?int $relogin_allowed_until = null,
-        private ?int $expiration_time = null,
-        private ?int $user_id_from_session = null
+        private readonly int $user_id,
+        private readonly bool $unrestricted_user,
+        private readonly string $session_id = '',
+        private readonly string $login_ip = '',
+        private readonly ?int $relogin_allowed_until = null,
+        private readonly ?int $expiration_time = null,
+        private readonly ?int $user_id_from_session = null
     ) {
     }
 
     public function getUserId(): int
     {
         return $this->user_id;
+    }
+
+    public function isUserUnrestricted(): bool
+    {
+        return $this->unrestricted_user;
     }
 
     public function getSessionId(): string
@@ -59,9 +66,11 @@ class Session
     }
 
     public function getAsTableRow(
+        \ilPlugin $pl,
         DataRowBuilder $row_builder,
         array $user_data,
-        \DateTimeZone $current_user_timezone
+        \DateTimeZone $current_user_timezone,
+        DateFormat $current_user_date_format
     ): DataRow {
         $row_data = [
             ManagementGUI::ROW_ID => $this->user_id,
@@ -69,7 +78,6 @@ class Session
             ManagementGUI::COLUMN_LAST_NAME => $user_data['lastname'],
             ManagementGUI::COLUMN_USERNAME => $user_data['login'],
             ManagementGUI::COLUMN_EMAIL => $user_data['email'],
-            ManagementGUI::COLUMN_LOGGED_IN => false
         ];
 
         if ($user_data['last_login'] !== null) {
@@ -78,24 +86,24 @@ class Session
             ))->setTimezone($current_user_timezone);
         }
 
-        if ($this->session_id === '') {
-            return $row_builder->buildDataRow(
-                (string) $user_data['usr_id'],
-                $row_data
-            )->withDisabledAction(ManagementGUI::ACTION_STRING);
+        if ($this->session_id !== '') {
+            $row_data[ManagementGUI::COLUMN_LAST_LOGIN_IP] = $this->login_ip;
         }
 
-        $row_data[ManagementGUI::COLUMN_LAST_LOGIN_IP] = $this->login_ip;
 
-        if ($this->isSessionActive()) {
-            $row_data[ManagementGUI::COLUMN_LOGGED_IN] = true;
+
+        $logged_in_value = $this->buildLoggedInColumnValue();
+        if ($logged_in_value !== null) {
+            $row_data[ManagementGUI::COLUMN_LOGGED_IN] = $logged_in_value;
         }
 
-        if ($this->relogin_allowed_until !== null
-            && $this->relogin_allowed_until > time()) {
-            $row_data[ManagementGUI::COLUMN_RELOING_AUTHORIZED_UNTIL] = (new \DateTimeImmutable(
-                '@' . $this->relogin_allowed_until
-            ))->setTimezone($current_user_timezone);
+        $relogin_value = $this->buildReloginUntilColumnValue(
+            $pl,
+            $current_user_timezone,
+            $current_user_date_format
+        );
+        if ($relogin_value !== null) {
+            $row_data[ManagementGUI::COLUMN_RELOING_AUTHORIZED_UNTIL] = $relogin_value;
         }
 
         $row = $row_builder->buildDataRow(
@@ -103,10 +111,43 @@ class Session
                 $row_data
             );
 
-        if (!$row_data[ManagementGUI::COLUMN_LOGGED_IN]) {
+        if ($this->unrestricted_user || !$row_data[ManagementGUI::COLUMN_LOGGED_IN]) {
             return $row->withDisabledAction(ManagementGUI::ACTION_STRING);
         }
 
         return $row;
+    }
+
+    private function buildLoggedInColumnValue(): ?bool
+    {
+        if ($this->unrestricted_user) {
+            return null;
+        }
+
+        if ($this->isSessionActive()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function buildReloginUntilColumnValue(
+        \ilPlugin $pl,
+        \DateTimeZone $current_user_timezone,
+        DateFormat $current_user_date_format
+    ): ?string {
+        if ($this->unrestricted_user) {
+            return $pl->txt('unrestricted_user');
+        }
+
+        if ($this->relogin_allowed_until !== null
+            && $this->relogin_allowed_until > time()) {
+            return (new \DateTimeImmutable(
+                '@' . $this->relogin_allowed_until
+            ))->setTimezone($current_user_timezone)
+            ->format($current_user_date_format->toString());
+        }
+
+        return null;
     }
 }

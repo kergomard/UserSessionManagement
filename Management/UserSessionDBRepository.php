@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace kergomard\UserSessionManagement\Management;
 
+use kergomard\UserSessionManagement\Config\Config;
+
 class UserSessionDBRepository implements UserSessionRepository
 {
     public const TABLE_NAME_USM_SESSION_DATA = 'xusm_sessions';
@@ -24,7 +26,9 @@ class UserSessionDBRepository implements UserSessionRepository
     private array $session_data = [];
 
     public function __construct(
-        private readonly \ilDBInterface $db
+        private readonly \ilDBInterface $db,
+        private readonly \ilRbacReview $rbacreview,
+        private readonly Config $config
     ) {
     }
 
@@ -83,6 +87,19 @@ class UserSessionDBRepository implements UserSessionRepository
         return $this->buildSessionFromDBRow($session_data);
     }
 
+    public function buildSession(
+        int $user_id,
+        string $session_id,
+        string $last_login_ip
+    ): Session {
+        return new Session(
+            $user_id,
+            $this->isUserUnrestricted($user_id),
+            $session_id,
+            $last_login_ip
+        );
+    }
+
     public function storeSession(
         Session $session
     ): void {
@@ -113,6 +130,7 @@ class UserSessionDBRepository implements UserSessionRepository
     ): Session {
         return new Session(
             $row->user_id,
+            $this->isUserUnrestricted($row->user_id),
             $row->session_id,
             $row->last_login_ip,
             $row->relogin_allowed_until,
@@ -126,6 +144,7 @@ class UserSessionDBRepository implements UserSessionRepository
     ): Session {
         return $this->session_data[$user_id] = new Session(
             $user_id,
+            $this->isUserUnrestricted($user_id),
         );
     }
 
@@ -137,6 +156,17 @@ class UserSessionDBRepository implements UserSessionRepository
                 $this->session_data[$user_id] = $this->buildEmptySession($user_id);
             }
         }
+    }
+
+    private function isUserUnrestricted(
+        int $user_id
+    ): bool {
+        foreach ($this->config->getUnrestrictedRoles() as $role) {
+            if ($this->rbacreview->isAssigned($user_id, $role)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
