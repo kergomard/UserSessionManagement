@@ -11,3 +11,4 @@ relogin_validity_byline#:#Dauer der Authorisierung zum erneuten Login in Minuten
 relogin_validity_label#:#Dauer
 unrestricted_roles_byline#:#Mitglieder der ausgewählten Rollen werden NICHT auf bereits bestehende Logins überprüft.
 unrestricted_roles_label#:#Uneingeschränkte Rollen
+unrestricted_user#:#Uneingeschränktes Konto

@@ -11,3 +11,4 @@ relogin_validity_byline#:#Validity of the authorisation to relogin in minutes.
 relogin_validity_label#:#Validity
 unrestricted_roles_byline#:#Members of the selected roles will NOT be checked for existing logins.
 unrestricted_roles_label#:#Roles Without a Login-Limit
+unrestricted_user#:#Unrestricted User

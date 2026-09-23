@@ -54,7 +54,6 @@ class ManagementGUI
     private \ilUserSessionManagementPlugin $pl;
     private Config $config;
     private UserSessionRepository $user_session_repo;
-    private SessionsDataRetrieval $sessions_table_data_retriever;
 
     private \ilTabsGUI $tabs_gui;
     private \ilHelpGUI $help;
@@ -69,9 +68,11 @@ class ManagementGUI
     private UIRenderer $ui_renderer;
     private Refinery $refinery;
     private \ilObjUser $user;
-    private \ilDBInterface $db;
+    private \ilRbacReview $rbacreview;
     private \ilAccessHandler $access;
     private DataFactory $data_factory;
+
+    private ?SessionDataRetrieval $session_data_retrieval = null;
 
     private \ilObjCourse $object;
 
@@ -90,8 +91,7 @@ class ManagementGUI
         $this->pl = $DIC['component.factory']->getPlugin(\ilUserSessionManagementPlugin::PLUGIN_ID);
         $local_dic = $this->pl->getLocalDIC();
         $this->config = $this->pl->getConfig();
-        $this->user_session_repo = $local_dic['user_session_repo'];
-        $this->sessions_table_data_retriever = $local_dic['sessions_table_data_retriever'];
+        $this->user_session_repo = $this->pl->getUserSessionRepo();
 
         $this->access = $local_dic['ilAccess'];
         $this->tabs_gui = $local_dic['ilTabs'];
@@ -102,6 +102,7 @@ class ManagementGUI
         $this->tpl = $local_dic['tpl'];
         $this->lng = $local_dic['lng'];
         $this->ctrl = $local_dic['ilCtrl'];
+        $this->rbacreview = $local_dic['rbacreview'];
         $this->user = $local_dic['ilUser'];
         $this->refinery = $local_dic['refinery'];
         $this->ui_factory = $local_dic['ui.factory'];
@@ -150,7 +151,6 @@ class ManagementGUI
 
         if ($this->query->has($action_parameter_token->getName())) {
             $this->executeTableAction(
-                $url_builder,
                 $action_parameter_token,
                 $row_id_token
             );
@@ -160,7 +160,6 @@ class ManagementGUI
     }
 
     private function executeTableAction(
-        URLBuilder $url_builder,
         URLBuilderToken $action_parameter_token,
         URLBuilderToken $row_id_token
     ): void {
@@ -191,9 +190,7 @@ class ManagementGUI
 
         if ($affected_users[0] === 'ALL_OBJECTS') {
             $this->buildFilter();
-            $affected_users = $this->sessions_table_data_retriever
-                ->withObject($this->object)
-                ->withFilterData($this->filter_data)
+            $affected_users = $this->getSessionDataRetrieval()
                 ->getAccessibleAndFilteredMemberIds();
         }
 
@@ -308,12 +305,10 @@ class ManagementGUI
                     )
                 ),
                 self::COLUMN_RELOING_AUTHORIZED_UNTIL => $column_factory
-                    ->date($this->pl->txt('relogin_authorized_until'), $this->buildUserDateFormat())
+                    ->text($this->pl->txt('relogin_authorized_until'))
                     ->withIsSortable(false)
             ],
-            $this->sessions_table_data_retriever
-                ->withObject($this->object)
-                ->withFilterData($this->filter_data)
+            $this->getSessionDataRetrieval()
         )->withActions($this->buildActions())
         ->withRequest($this->request);
     }
@@ -546,5 +541,21 @@ class ManagementGUI
             $this->lng->txt('cont_news_timeline_tab'),
             $this->ctrl->getLinkTargetByClass([\ilRepositoryGUI::class, \ilObjCourseGUI::classe, \ilNewsTimelineGUI::class], 'show')
         );
+    }
+
+    private function getSessionDataRetrieval(): SessionDataRetrieval
+    {
+        if ($this->session_data_retrieval === null) {
+            $this->session_data_retrieval = new SessionDataRetrieval(
+                $this->user,
+                $this->pl,
+                $this->data_factory,
+                $this->user_session_repo,
+                $this->object,
+                $this->filter_data
+            );
+        }
+
+        return $this->session_data_retrieval;
     }
 }

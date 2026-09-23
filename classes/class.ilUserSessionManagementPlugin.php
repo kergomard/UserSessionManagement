@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 use kergomard\UserSessionManagement\LocalDIC;
 use kergomard\UserSessionManagement\Config\Config;
+use kergomard\UserSessionManagement\Management\UserSessionDBRepository;
 use kergomard\UserSessionManagement\Management\UserSessionRepository;
 use kergomard\UserSessionManagement\Management\Session;
 
@@ -68,6 +69,12 @@ class ilUserSessionManagementPlugin extends ilUserInterfaceHookPlugin
         return $this->config;
     }
 
+    public function getUserSessionRepo(): UserSessionRepository
+    {
+        $this->deferredInit();
+        return $this->usm_repo;
+    }
+
     public function handleEvent(
         string $component,
         string $event,
@@ -98,16 +105,22 @@ class ilUserSessionManagementPlugin extends ilUserInterfaceHookPlugin
         $this->tpl = $this->local_dic['tpl'];
         $this->logger = $this->local_dic['ilLog'];
 
-        $this->usm_repo = $this->local_dic['user_session_repo'];
         $this->config = $this->local_dic['config_repo']->get();
-        $this->session = $this->usm_repo->getSessionForUserId($this->user->getId());
+        $this->usm_repo =  new UserSessionDBRepository(
+            $this->db,
+            $this->rbacreview,
+            $this->config
+        );
+        $this->session = $this->usm_repo->getSessionForUserId(
+            $this->user->getId()
+        );
 
         $this->is_initialized = true;
     }
 
     private function handleLogin(): void
     {
-        if (!$this->doesUserNeedChecking()) {
+        if ($this->session->isUserUnrestricted()) {
             return;
         }
 
@@ -124,22 +137,12 @@ class ilUserSessionManagementPlugin extends ilUserInterfaceHookPlugin
         }
 
         $this->usm_repo->storeSession(
-            new Session(
+            $this->usm_repo->buildSession(
                 $this->user->getId(),
                 $this->auth->getId(),
                 $_SERVER['REMOTE_ADDR']
             )
         );
-    }
-
-    private function doesUserNeedChecking(): bool
-    {
-        foreach ($this->config->getUnrestrictedRoles() as $role) {
-            if ($this->rbacreview->isAssigned($this->user->getId(), $role)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private function isCurrentUserAllowed(): bool
