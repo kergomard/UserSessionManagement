@@ -307,7 +307,6 @@ class ManagementGUI
                 ),
                 self::COLUMN_RELOING_AUTHORIZED_UNTIL => $column_factory
                     ->text($this->pl->txt('relogin_authorized_until'))
-                    ->withIsSortable(false)
             ],
             $this->getSessionDataRetrieval()
         )->withActions($this->buildActions())

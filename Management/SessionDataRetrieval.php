@@ -49,19 +49,20 @@ class SessionDataRetrieval implements DataRetrieval
         ?array $filter_data,
         ?array $additional_parameters
     ): \Generator {
-        $course_members =$this->orderAndLimitCourseMembers(
-            $this->filterCourseMembers(
-                $this->getCourseMembers()
-            ),
-            $range,
-            $order
+        $course_members = $this->filterCourseMembers(
+            $this->getCourseMembers()
         );
+
         $this->user_session_repo->preloadDataForUserIds($this->getCourseMemberIds());
 
         $current_user_timezone = new \DateTimeZone(
             $this->current_user->getTimeZone()
         );
-        foreach($course_members as $course_member) {
+        foreach($this->orderAndLimitCourseMembers(
+            $course_members,
+            $range,
+            $order
+        ) as $course_member) {
             yield $this->user_session_repo->getSessionForUserId(
                 $course_member['usr_id']
             )->getAsTableRow(
@@ -137,7 +138,7 @@ class SessionDataRetrieval implements DataRetrieval
                         $b,
                         $direction
                     );
-                    if ($relative_position > 0) {
+                    if ($relative_position !== 0) {
                         return $relative_position;
                     }
 
@@ -197,11 +198,101 @@ class SessionDataRetrieval implements DataRetrieval
 
         $value_a = $user_a_values[$order_key] ?? '';
         $value_b = $user_b_values[$order_key] ?? '';
+
+        if ($order_key === ManagementGUI::COLUMN_LAST_LOGIN_IP) {
+            return $this->getRelativePositionForIP(
+                $this->user_session_repo->getSessionForUserId($user_a_values['usr_id'])->getLoginIp(),
+                $this->user_session_repo->getSessionForUserId($user_b_values['usr_id'])->getLoginIp(),
+                $direction
+            );
+        }
+
+        if ($order_key === ManagementGUI::COLUMN_RELOING_AUTHORIZED_UNTIL) {
+            return $this->getRelativePositionForAuthorizedUntil(
+                $this->user_session_repo->getSessionForUserId($user_a_values['usr_id']),
+                $this->user_session_repo->getSessionForUserId($user_b_values['usr_id']),
+                $direction
+            );
+        }
+
         if ($direction === 'ASC') {
             return strcasecmp($value_a, $value_b);
         }
 
         return strcasecmp($value_b, $value_a);
+    }
+
+    private function getRelativePositionForIP(
+        string $user_a_ip,
+        string $user_b_ip,
+        string $direction
+    ): int {
+        $user_a_type = $this->getIpTypeOf($user_a_ip);
+        $user_b_type = $this->getIpTypeOf($user_b_ip);
+
+        if ($user_a_type === IPType::V6) {
+            $user_a_ip = inet_pton($user_a_ip);
+        }
+
+        if ($user_b_type === IPType::V6) {
+            $user_b_ip = inet_pton($user_b_ip);
+        }
+
+        $inverter = $direction === 'ASC' ? 1 : -1;
+
+        if ($user_a_type === IPType::NoIP && $user_b_type === IPType::NoIP
+            || $user_a_type === IPType::V6 && $user_b_type === IPType::NoIP
+            || $user_a_type === IPType::NoIP && $user_b_type === IPType::V6
+            || $user_a_type === IPType::V6 && $user_b_type === IPType::V6) {
+            return $inverter * strcasecmp($user_a_ip, $user_b_ip);
+        }
+
+        if ($user_a_type === IPType::V4 && $user_b_type === IPType::V4) {
+            return $inverter * (ip2long($user_a_ip) <=> ip2long($user_b_ip));
+        }
+
+        if ($user_a_type === IPType::V4 && $user_b_type === IPType::V6
+            || $user_a_type === IPType::NoIP && $user_b_type === IPType::V4) {
+            return $inverter * -1;
+        }
+
+        if ($user_a_type === IPType::V6 && $user_b_type === IPType::V4
+            || $user_a_type === IPType::V4 && $user_b_type === IPType::NoIP) {
+            return $inverter;
+        }
+    }
+    private function getRelativePositionForAuthorizedUntil(
+        Session $user_a_session,
+        Session $user_b_session,
+        string $direction
+    ): int {
+        $inverter = $direction === 'ASC' ? 1 : -1;
+
+        $user_a_authorized_until = $user_a_session->getReloginAllowedUntil();
+        $user_b_authorized_until = $user_b_session->getReloginAllowedUntil();
+
+        if ($user_a_authorized_until !== null && $user_b_authorized_until !== null) {
+            return $inverter * ($user_a_authorized_until - $user_b_authorized_until);
+        }
+
+        if ($user_a_authorized_until === null) {
+            return $inverter * ($user_a_session->isUserUnrestricted() ? 1 : -1);
+        }
+
+        return $inverter * ($user_b_session->isUserUnrestricted() ? -1 : 1);
+    }
+
+    private function getIpTypeOf(string $ip): IPType
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return IPType::V4;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return IPType::V6;
+        }
+
+        return IPType::NoIP;
     }
 
     private function getCourseMemberIds(): array
