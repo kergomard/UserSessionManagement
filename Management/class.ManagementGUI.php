@@ -197,11 +197,24 @@ class ManagementGUI
 
         if ($action === self::ACTION_STRING) {
             $this->user_session_repo->reauthorizeLoginForUsers(
-                $affected_users,
+                $this->removeUsersWithoutActiveSession($affected_users),
                 time() + $this->config->getReloginValidity() * 60
             );
             $this->ctrl->redirectByClass(self::class);
         }
+    }
+
+    private function removeUsersWithoutActiveSession(
+        array $user_ids
+    ): array {
+        $this->user_session_repo->preloadDataForUserIds($user_ids);
+
+        return array_filter(
+            $user_ids,
+            fn(int $user_id): bool => $this->user_session_repo
+                ->getSessionForUserId($user_id)
+            ->isSessionActive()
+        );
     }
 
     private function showSessions() : void
