@@ -1,5 +1,8 @@
 # User Session Management
 
+**This Version does not receive any improvements anymore only important
+bugfixes. Please update to ILIAS 10 to have the latest and greatest.**
+
 The "User Session Management"-plugin is a UIHook-Plugin for ILIAS that allows
 you to restrict multiple logins by one user:
 * It stops users from login twice showing a corresponding message.
