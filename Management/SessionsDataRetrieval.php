@@ -189,7 +189,7 @@ class SessionDataRetrieval implements DataRetrieval
             }
 
             if ($direction === 'ASC' && $user_a_session_active > $user_b_session_active
-                || $direction === 'DSC' && $user_a_session_active < $user_b_session_active) {
+                || $direction === 'DESC' && $user_a_session_active < $user_b_session_active) {
                 return 1;
             }
 
